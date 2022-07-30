@@ -20,8 +20,15 @@ export interface Pokemon {
     imageUrl: string;
 }
 
+const cachedPokemon: { [key: string]: Pokemon; } = {};
+const cachedTypes: { [key: string]: Type; } = {};
+
 async function buildType(type: string, primaryType: boolean): Promise<Type> {
-    console.log(`${BASE_URL}type/${type}`);
+    // handle caching
+    if (cachedTypes[type]) {
+        return cachedTypes[type];
+    }
+
     const response = await axios.get(`${BASE_URL}type/${type}`);
     const data = response?.data;
     if (!data) {
@@ -40,10 +47,18 @@ async function buildType(type: string, primaryType: boolean): Promise<Type> {
         noDamageFrom: damageRelations.no_damage_from.map(mapRelation),
         noDamageTo: damageRelations.no_damage_to.map(mapRelation),
     };
+
+    cachedTypes[type] = typeData;
+
     return typeData;
 }
 
 export async function getPokemonByName(name: string): Promise<Pokemon> {
+    // handle caching
+    if (cachedPokemon[name]) {
+        return cachedPokemon[name];
+    }
+
     const response = await axios(`${BASE_URL}pokemon/${name.toLowerCase()}`);
 
     const data = response?.data;
