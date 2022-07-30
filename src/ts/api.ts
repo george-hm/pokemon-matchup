@@ -4,11 +4,13 @@ const BASE_URL = 'https://pokeapi.co/api/v2/';
 
 interface Type {
     name: string;
-    doubleDamgeFrom: string[],
+    primaryType: boolean;
+    doubleDamageFrom: string[],
     doubleDamageTo: string[],
     halfDamageFrom: string[],
     halfDamageTo: string[],
     noDamageFrom: string[],
+    noDamageTo: string[],
 }
 
 export interface Pokemon {
@@ -18,7 +20,7 @@ export interface Pokemon {
     imageUrl: string;
 }
 
-async function buildType(type: string): Promise<Type> {
+async function buildType(type: string, primaryType: boolean): Promise<Type> {
     console.log(`${BASE_URL}type/${type}`);
     const response = await axios.get(`${BASE_URL}type/${type}`);
     const data = response?.data;
@@ -30,11 +32,13 @@ async function buildType(type: string): Promise<Type> {
     const mapRelation = (rawType: { name: string }): string => rawType.name;
     const typeData: Type = {
         name: data.name,
-        doubleDamgeFrom: damageRelations.double_damage_from.map(mapRelation),
+        primaryType,
+        doubleDamageFrom: damageRelations.double_damage_from.map(mapRelation),
         doubleDamageTo: damageRelations.double_damage_to.map(mapRelation),
         halfDamageFrom: damageRelations.half_damage_from.map(mapRelation),
         halfDamageTo: damageRelations.half_damage_to.map(mapRelation),
         noDamageFrom: damageRelations.no_damage_from.map(mapRelation),
+        noDamageTo: damageRelations.no_damage_to.map(mapRelation),
     };
     return typeData;
 }
@@ -57,7 +61,10 @@ export async function getPokemonByName(name: string): Promise<Pokemon> {
 
     const types: Type[] = await Promise.all(
         data.types.map(
-            async (type: rawType) => buildType(type.type.name),
+            async (type: rawType) => buildType(
+                type.type.name,
+                type.slot === 1,
+            ),
         ),
     );
     const pokemon: Pokemon = {
@@ -75,7 +82,7 @@ export function getPokemonMoves(): void {
 }
 
 async function main() {
-    console.log(await getPokemonByName('squirtle'));
+    console.log(JSON.stringify(await getPokemonByName('gengar'), null, 4));
 }
 
 main();
