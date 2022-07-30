@@ -74,9 +74,28 @@ export async function getPokemonByName(name: string): Promise<Pokemon> {
         imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
     };
 
+    cachedPokemon[name] = pokemon;
+
     return pokemon;
 }
 
-export function getPokemonMoves(): void {
-    throw new Error('Method not implemented.');
+export async function getAllPokemonMoveNames(): Promise<string[]> {
+    const response = await axios.get(`${BASE_URL}move?limit=10000`);
+    const data = response?.data;
+    if (!data) {
+        throw new Error('No data');
+    }
+
+    return data.results.map((result: {name:string}) => result.name);
+}
+
+export async function getAllPokemonNames(): Promise<string[]> {
+    const response = await axios(`${BASE_URL}pokemon?limit=10000`);
+
+    const data = response?.data;
+    if (!data) {
+        throw new Error('No data');
+    }
+
+    return data.results.map((result: {name: string}) => result.name);
 }
