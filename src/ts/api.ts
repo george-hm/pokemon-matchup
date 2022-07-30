@@ -80,9 +80,3 @@ export async function getPokemonByName(name: string): Promise<Pokemon> {
 export function getPokemonMoves(): void {
     throw new Error('Method not implemented.');
 }
-
-async function main() {
-    console.log(JSON.stringify(await getPokemonByName('gengar'), null, 4));
-}
-
-main();
