@@ -7,8 +7,8 @@ export interface PokemonMatchup {
 }
 
 export function getPokemonMatchup(pokemonYou: Pokemon, pokemonOpponent: Pokemon): PokemonMatchup {
-    const yourTypes = pokemonYou.types;
-    const opponentTypeNames = pokemonOpponent.types.map((type: Type) => type.name);
+    const yourTypes = pokemonYou.typeVersions.latest; // @TODO use generation here
+    const opponentTypeNames = pokemonOpponent.typeVersions.latest.map((type: Type) => type.name);
     const pM: PokemonMatchup = {
         to: {},
         from: {},
