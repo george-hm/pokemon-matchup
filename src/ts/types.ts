@@ -54,9 +54,13 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
     // handle caching
     if (cachedTypes[type]) {
         const cached = cachedTypes[type];
-        cached.primaryType = primaryType;
-        return cached;
+        // duplicate to avoid modifying the cached version
+        const dupedCache = { ...cached };
+        dupedCache.primaryType = primaryType;
+        return dupedCache;
     }
+
+    console.log(`Fetching type ${type}`);
 
     const response = await axios.get(`${BASE_URL}type/${type}`);
     const data = response?.data;
@@ -88,7 +92,7 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
         typeData.versions[genNumber] = versionRelations;
     });
 
-    cachedTypes[type] = typeData;
+    cachedTypes[type] = { ...typeData };
     delete cachedTypes[type].primaryType;
 
     return typeData;
