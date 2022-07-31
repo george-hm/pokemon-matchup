@@ -1,60 +1,49 @@
 import axios from 'axios';
-import { buildType, Type } from './types';
 import { SelectOption } from './component_interfaces';
+import { buildType, Type } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
-export interface Pokemon {
+interface Pokemon {
     name: string;
     types: Type[];
-    id: number;
+    id: string;
+    imageUrl: string;
 }
 
-const cachedPokemon: { [key: string]: Pokemon; } = {};
+const cachedPokemon: { [id: string]: Pokemon; } = {};
 
 export async function getPokemonById(id: number): Promise<Pokemon> {
-    // handle caching
-    if (cachedPokemon[id]) {
-        return cachedPokemon[id];
+    const foundPokemon: Pokemon = cachedPokemon[id];
+    if (foundPokemon) {
+        return foundPokemon;
     }
+    const rawPokemonData = await axios(`${BASE_URL}pokemon/${id}`);
 
-    const response = await axios(`${BASE_URL}pokemon/${id}`);
-
-    const data = response?.data;
-    if (!data) {
-        throw new Error('No data');
-    }
-
-    // map all types and await
-    interface rawType {
-        slot: number;
-        type: {
-            name: string;
-        };
-    }
-
+    const data = rawPokemonData?.data;
     const types: Type[] = await Promise.all(
         data.types.map(
-            async (type: rawType) => buildType(
+            async (type: { type: { name: string; }, slot: number; }) => buildType(
                 type.type.name,
                 type.slot === 1,
             ),
         ),
     );
+
     const pokemon: Pokemon = {
         name: data.name,
+        id: String(data.id),
+        imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
         types,
-        id: data.id,
     };
 
-    cachedPokemon[id] = pokemon;
+    cachedPokemon[pokemon.name] = pokemon;
 
     return pokemon;
 }
 
 export async function getAllPokemonSelectOptions(): Promise<SelectOption[]> {
     const response = await axios(`${BASE_URL}pokemon?limit=10000`);
-
     const data = response?.data;
     if (!data) {
         throw new Error('No data');
@@ -62,9 +51,9 @@ export async function getAllPokemonSelectOptions(): Promise<SelectOption[]> {
 
     return data.results.map((result: { name: string; url: string; }) => ({
         label: result.name,
-        value: parseInt(
+        value: String(parseInt(
             result.url.split('pokemon/').pop() as string,
             10,
-        ),
+        )),
     }));
 }
