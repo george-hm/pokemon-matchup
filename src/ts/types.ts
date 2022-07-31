@@ -1,11 +1,27 @@
 import axios from 'axios';
-import { Generations } from './generations';
+import { convertGenStringToEnum, Generations } from './generations';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
 interface RawDamageRelation {
     // using Array<> here because its more readable
     [key: string]: Array<{ name: string; }>;
+}
+
+// this is the raw response we get from the api
+interface RawTypeResponse {
+    // eslint-disable-next-line camelcase
+    past_types: Array<{
+        generation: { url: string; };
+        types: Array<{
+            slot: number;
+            type: { name: string; };
+        }>;
+    }>;
+    types: Array<{
+        slot: number;
+        type: { name: string; };
+    }>;
 }
 
 interface DamageMatchups {
@@ -28,6 +44,7 @@ interface Versions {
     [Generations.GEN_7]?: DamageMatchups;
     [Generations.GEN_8]?: DamageMatchups;
 }
+
 export interface Type {
     name: string;
     primaryType?: boolean;
@@ -135,4 +152,41 @@ export function getMatchupForGeneration(type: Type, gen: Generations): DamageMat
     });
 
     return type.versions[closestLowerGen as Generations] as DamageMatchups;
+}
+
+export async function buildFromRawTypes(rawTypes: RawTypeResponse) {
+    const types: Type[] = await Promise.all(
+        rawTypes.types.map(
+            async (type) => buildType(
+                type.type.name,
+                type.slot === 1,
+            ),
+        ),
+    );
+
+    const typeVersions: { [key in Generations]?: Type[] } = {};
+    const promises: Promise<Type>[] = [];
+    for (let i = 0; i < rawTypes.past_types.length; i += 1) {
+        const gen = convertGenStringToEnum(rawTypes.past_types[i].generation.url);
+        const genType = rawTypes.past_types[i].types;
+        typeVersions[gen] = [];
+        for (let j = 0; j < genType.length; j += 1) {
+            const type = genType[j];
+            const prom = buildType(
+                type.type.name,
+                type.slot === 1,
+            );
+
+            prom.then((builtType) => {
+                typeVersions?.[gen]?.push(builtType);
+            });
+            promises.push(prom);
+        }
+    }
+    await Promise.all(promises);
+
+    return {
+        types,
+        typeVersions,
+    };
 }
