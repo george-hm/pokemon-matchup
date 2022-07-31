@@ -116,6 +116,11 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
 }
 
 function getClosestGen(versions: Versions<unknown>, gen: Generations): Generations {
+    // get the specific gen if it exists
+    if (versions[gen]) {
+        return gen;
+    }
+
     // if not, see if we have the data for any past generations
     const pastGenerations = Object.keys(versions).filter(
         (version) => version !== Generations.GEN_LATEST,
