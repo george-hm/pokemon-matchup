@@ -10,3 +10,16 @@ export enum Generations {
     GEN_7 = 7,
     GEN_8 = 8,
 }
+
+export function convertGenStringToEnum(gen: string): Generations {
+    const genNum = parseInt(
+        gen.split('generation/').pop() as string,
+        10,
+    );
+
+    if (!Generations[genNum]) {
+        throw new Error(`Invalid generation: ${gen}`);
+    }
+
+    return genNum as Generations;
+}
