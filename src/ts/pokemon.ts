@@ -3,69 +3,89 @@ import { buildType, Type } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
-export interface Pokemon {
+export default class Pokemon {
+    static cachedPokemon: { [key: string]: Pokemon; } = {};
+
     name: string;
-    types: Type[];
-    id: number,
+
+    types?: Type[];
+
+    id: number;
+
     imageUrl: string;
-}
 
-const cachedPokemon: { [key: string]: Pokemon; } = {};
+    isFullyLoaded = false;
 
-export async function getPokemonByName(name: string): Promise<Pokemon> {
-    // handle caching
-    if (cachedPokemon[name]) {
-        return cachedPokemon[name];
+    constructor(name: string, id: number, imageUrl: string) {
+        this.name = name;
+        this.id = id;
+        this.imageUrl = imageUrl;
     }
 
-    const response = await axios(`${BASE_URL}pokemon/${name.toLowerCase()}`);
+    static async getAllPokemon(): Promise<{ [key: string]: Pokemon}> {
+        const response = await axios(`${BASE_URL}pokemon?limit=10000`);
 
-    const data = response?.data;
-    if (!data) {
-        throw new Error('No data');
+        const data = response?.data;
+        if (!data) {
+            throw new Error('No data');
+        }
+
+        const pokemon: {[key: string]: Pokemon} = {};
+        data.results.forEach((result: { name: string; url: string; }) => {
+            if (this.cachedPokemon[result.name]) {
+                return;
+            }
+
+            const id = parseInt(
+                result.url.split('pokemon/').pop() as string,
+                10,
+            );
+            const createdPokemon = new Pokemon(
+                result.name,
+                id,
+                `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+            );
+
+            pokemon[createdPokemon.name] = createdPokemon;
+        });
+
+        this.cachedPokemon = { ...this.cachedPokemon, ...pokemon };
+
+        return pokemon;
     }
 
-    // map all types and await
-    interface rawType {
-        slot: number;
-        type: {
-            name: string;
-        };
+    static async getPokemonByName(name: string): Promise<Pokemon> {
+        // first load all pokemon
+        await this.getAllPokemon();
+
+        const foundPokemon: Pokemon = this.cachedPokemon[name];
+        if (!foundPokemon) {
+            throw new Error(`No pokemon found for ${name}`);
+        }
+
+        if (!foundPokemon.isFullyLoaded) {
+            await foundPokemon.load();
+        }
+
+        return foundPokemon;
     }
 
-    const types: Type[] = await Promise.all(
-        data.types.map(
-            async (type: rawType) => buildType(
-                type.type.name,
-                type.slot === 1,
+    async load(): Promise<void> {
+        const rawPokemonData = await axios(`${BASE_URL}pokemon/${this.name.toLowerCase()}`);
+
+        const data = rawPokemonData?.data;
+        const types: Type[] = await Promise.all(
+            data.types.map(
+                async (type: any) => buildType(
+                    type.type.name,
+                    type.slot === 1,
+                ),
             ),
-        ),
-    );
-    const pokemon: Pokemon = {
-        name: data.name,
-        types,
-        id: data.id,
-        imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
-    };
+        );
 
-    cachedPokemon[name] = pokemon;
+        this.types = types;
+        Pokemon.cachedPokemon[this.name] = this;
 
-    return pokemon;
-}
-
-export async function getAllPokemonNames(): Promise<{ name: string; id: number}[]> {
-    const response = await axios(`${BASE_URL}pokemon?limit=10000`);
-
-    const data = response?.data;
-    if (!data) {
-        throw new Error('No data');
+        this.isFullyLoaded = true;
     }
-
-    return data.results.map((result: { name: string; url: string; }) => ({
-        name: result.name,
-        id: parseInt(
-            result.url.split('pokemon/').pop() as string,
-            10,
-        ),
-    }));
 }
