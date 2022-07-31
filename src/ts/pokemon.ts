@@ -5,7 +5,7 @@ import { buildFromRawTypes, Type } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
-interface Pokemon {
+export interface Pokemon {
     name: string;
     types: Type[];
     typeVersions: { [key in Generations]?: Type[] };
