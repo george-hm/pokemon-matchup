@@ -23,16 +23,16 @@ watch(props, async () => {
     const opponentName = pokemonOpponentObj.name;
     const pM: PokemonMatchup = getPokemonMatchup(pokemonYouObj, pokemonOpponentObj);
 
-    const yourTypeKeys = Object.keys(pM.yourTypeA);
-    for (let index = 0; index < yourTypeKeys.length; index += 1) {
-        const type = yourTypeKeys[index];
-        const effectiveness = pM.yourTypeA[type] > 0 ? 'Strong' : 'Weak';
+    const toTypes = Object.keys(pM.to);
+    for (let index = 0; index < toTypes.length; index += 1) {
+        const type = toTypes[index];
+        const effectiveness = pM.to[type] > 0 ? 'Strong' : 'Weak';
         items.push(`Your ${type} type is ${effectiveness} attacking ${opponentName}`);
     }
-    const opponentTypeKeys = Object.keys(pM.opponentTypeA);
-    for (let index = 0; index < opponentTypeKeys.length; index += 1) {
-        const type = opponentTypeKeys[index];
-        const effectiveness = pM.opponentTypeA[type] > 0 ? 'Strong' : 'Weak';
+    const fromTypes = Object.keys(pM.from);
+    for (let index = 0; index < fromTypes.length; index += 1) {
+        const type = fromTypes[index];
+        const effectiveness = pM.from[type] > 0 ? 'Strong' : 'Weak';
         items.push(`Their ${type} type is ${effectiveness} attacking your ${yourName}`);
     }
     analysisResults.value = items;
