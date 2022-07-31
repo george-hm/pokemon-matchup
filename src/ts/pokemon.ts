@@ -55,14 +55,13 @@ export default class Pokemon {
     }
 
     static async getPokemonByName(name: string): Promise<Pokemon> {
-        // first load all pokemon
-        await this.getAllPokemon();
-
-        const foundPokemon: Pokemon = this.cachedPokemon[name];
-        if (!foundPokemon) {
-            throw new Error(`No pokemon found for ${name}`);
+        // load pokemon first if we don't have any
+        if (!Object.keys(this.cachedPokemon).length) {
+            await this.getAllPokemon();
         }
+        const foundPokemon: Pokemon = this.cachedPokemon[name];
 
+        // if it's not in the cache it doesn't exist
         if (!foundPokemon.isFullyLoaded) {
             await foundPokemon.load();
         }
