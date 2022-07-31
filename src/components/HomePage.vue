@@ -7,11 +7,10 @@ import PokemonPicker from './PokemonPicker.vue';
 
 const model: HomePageModel = reactive({
     generation: '8',
-    pokemonYou: 129,
-    pokemonOpponent: 129,
+    pokemonYou: '129',
+    pokemonOpponent: '129',
 });
 const selectOptions: SelectOption[] = await getAllPokemonSelectOptions();
-
 </script>
 
 <template>

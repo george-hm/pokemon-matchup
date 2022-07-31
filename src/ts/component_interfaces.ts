@@ -1,7 +1,7 @@
 export interface HomePageModel {
     generation: string;
-    pokemonYou: number;
-    pokemonOpponent: number;
+    pokemonYou: string;
+    pokemonOpponent: string;
 }
 
 export interface SelectOption {

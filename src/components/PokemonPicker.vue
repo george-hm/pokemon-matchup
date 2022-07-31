@@ -4,9 +4,10 @@ import { SelectOption } from '@/ts/component_interfaces';
 
 const emits = defineEmits(['update:modelValue']);
 const props = defineProps<{
-    modelValue: number,
+    modelValue: string,
     options: SelectOption[],
 }>();
+console.log(props);
 const imageURL = computed(() => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${props.modelValue}.png`);
 
 async function inputChanged(id: string) {
@@ -15,17 +16,17 @@ async function inputChanged(id: string) {
 </script>
 
 <template>
-  <div>
-    <n-image
-      width="96"
-      :src=imageURL
-    />
-    <n-select
-      filterable
-      placeholder="Select a Pokemon"
-      :default-value=modelValue
-      :options=options
-      :on-update:value=inputChanged
-    />
-  </div>
+    <div>
+        <n-image
+            width="96"
+            :src=imageURL
+        />
+        <n-select
+            filterable
+            placeholder="Select a Pokemon"
+            :default-value=modelValue
+            :options=options
+            :on-update:value=inputChanged
+        />
+    </div>
 </template>

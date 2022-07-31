@@ -13,7 +13,7 @@ interface Pokemon {
 
 const cachedPokemon: { [id: string]: Pokemon; } = {};
 
-export async function getPokemonById(id: number): Promise<Pokemon> {
+export async function getPokemonById(id: string|number): Promise<Pokemon> {
     const foundPokemon: Pokemon = cachedPokemon[id];
     if (foundPokemon) {
         return foundPokemon;
