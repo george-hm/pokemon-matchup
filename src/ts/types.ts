@@ -33,22 +33,22 @@ interface DamageMatchups {
     noDamageTo: string[],
 }
 
-interface Versions {
-    [Generations.GEN_LATEST]: DamageMatchups;
-    [Generations.GEN_1]?: DamageMatchups;
-    [Generations.GEN_2]?: DamageMatchups;
-    [Generations.GEN_3]?: DamageMatchups;
-    [Generations.GEN_4]?: DamageMatchups;
-    [Generations.GEN_5]?: DamageMatchups;
-    [Generations.GEN_6]?: DamageMatchups;
-    [Generations.GEN_7]?: DamageMatchups;
-    [Generations.GEN_8]?: DamageMatchups;
+export interface Versions<T> {
+    [Generations.GEN_LATEST]: T;
+    [Generations.GEN_1]?: T;
+    [Generations.GEN_2]?: T;
+    [Generations.GEN_3]?: T;
+    [Generations.GEN_4]?: T;
+    [Generations.GEN_5]?: T;
+    [Generations.GEN_6]?: T;
+    [Generations.GEN_7]?: T;
+    [Generations.GEN_8]?: T;
 }
 
 export interface Type {
     name: string;
     primaryType?: boolean;
-    versions: Versions;
+    versions: Versions<DamageMatchups>;
 }
 
 const cachedTypes: { [key: string]: Type; } = {};
@@ -115,19 +115,19 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
     return typeData;
 }
 
-export function getMatchupForGeneration(type: Type, gen: Generations): DamageMatchups {
-    // first see if we have the data for the generation
-    if (type.versions[gen]) {
-        return type.versions[gen] as DamageMatchups;
+function getClosestGen(versions: Versions<unknown>, gen: Generations): Generations {
+    // get the specific gen if it exists
+    if (versions[gen]) {
+        return gen;
     }
 
     // if not, see if we have the data for any past generations
-    const pastGenerations = Object.keys(type.versions).filter(
+    const pastGenerations = Object.keys(versions).filter(
         (version) => version !== Generations.GEN_LATEST,
     );
 
     if (!pastGenerations.length) {
-        return type.versions[Generations.GEN_LATEST] as DamageMatchups;
+        return Generations.GEN_LATEST;
     }
 
     // get the closest higher generation
@@ -140,7 +140,7 @@ export function getMatchupForGeneration(type: Type, gen: Generations): DamageMat
 
     // if its not higher, just return the latest
     if (!closestHigherGen || closestHigherGen < gen) {
-        return type.versions[Generations.GEN_LATEST] as DamageMatchups;
+        return Generations.GEN_LATEST;
     }
 
     // get the closest lower generation
@@ -151,7 +151,17 @@ export function getMatchupForGeneration(type: Type, gen: Generations): DamageMat
         return closest;
     });
 
-    return type.versions[closestLowerGen as Generations] as DamageMatchups;
+    return closestLowerGen as Generations;
+}
+
+export function getMatchupForGeneration(type: Type, gen: Generations): DamageMatchups {
+    const closestGen = getClosestGen(type.versions, gen);
+    return type.versions[closestGen] as DamageMatchups;
+}
+
+export function getTypesForGeneration(typeVersions: Versions<Type[]>, gen: Generations): Type[] {
+    const closestGen = getClosestGen(typeVersions, gen);
+    return typeVersions[closestGen] as Type[];
 }
 
 export async function buildFromRawTypes(rawTypes: RawTypeResponse) {
@@ -164,7 +174,9 @@ export async function buildFromRawTypes(rawTypes: RawTypeResponse) {
         ),
     );
 
-    const typeVersions: { [key in Generations]?: Type[] } = {};
+    const typeVersions: Versions<Type[]> = {
+        [Generations.GEN_LATEST]: types,
+    };
     const promises: Promise<Type>[] = [];
     for (let i = 0; i < rawTypes.past_types.length; i += 1) {
         const gen = convertGenStringToEnum(rawTypes.past_types[i].generation.url);
@@ -185,8 +197,5 @@ export async function buildFromRawTypes(rawTypes: RawTypeResponse) {
     }
     await Promise.all(promises);
 
-    return {
-        types,
-        typeVersions,
-    };
+    return typeVersions;
 }

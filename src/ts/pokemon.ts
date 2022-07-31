@@ -1,14 +1,12 @@
 import axios from 'axios';
 import { SelectOption } from './component_interfaces';
-import { Generations } from './generations';
-import { buildFromRawTypes, Type } from './types';
+import { buildFromRawTypes, Type, Versions } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
 export interface Pokemon {
     name: string;
-    types: Type[];
-    typeVersions: { [key in Generations]?: Type[] };
+    typeVersions: Versions<Type[]>;
     id: string;
     imageUrl: string;
 }
@@ -24,12 +22,11 @@ export async function getPokemonById(id: string|number): Promise<Pokemon> {
 
     const data = rawPokemonData?.data;
 
-    const typeData = await buildFromRawTypes(data);
+    const typeVersions = await buildFromRawTypes(data);
 
     const pokemon: Pokemon = {
         name: data.name,
-        types: typeData.types,
-        typeVersions: typeData.typeVersions,
+        typeVersions,
         id: data.id,
         imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
     };

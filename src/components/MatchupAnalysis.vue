@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { defineProps, ref, watch } from 'vue';
 import { HomePageModel } from '@/ts/component_interfaces';
-import { Type } from '@/ts/types';
 import { getPokemonById } from '@/ts/pokemon';
 import { PokemonMatchup, getPokemonMatchup } from '@/ts/pokemon_matchup';
 
