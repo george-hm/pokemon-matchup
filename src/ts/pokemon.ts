@@ -22,9 +22,8 @@ export default class Pokemon {
         this.imageUrl = imageUrl;
     }
 
-    static async getAllPokemon(): Promise<{ [key: string]: Pokemon}> {
+    static async getAllPokemon(): Promise<{ [key: string]: Pokemon; }> {
         const response = await axios(`${BASE_URL}pokemon?limit=10000`);
-
         const data = response?.data;
         if (!data) {
             throw new Error('No data');
@@ -51,18 +50,17 @@ export default class Pokemon {
 
         this.cachedPokemon = { ...this.cachedPokemon, ...pokemon };
 
-        return pokemon;
+        return this.cachedPokemon;
     }
 
     static async getPokemonByName(name: string): Promise<Pokemon> {
-        // first load all pokemon
-        await this.getAllPokemon();
-
-        const foundPokemon: Pokemon = this.cachedPokemon[name];
-        if (!foundPokemon) {
-            throw new Error(`No pokemon found for ${name}`);
+        // load pokemon first if we don't have any
+        if (!Object.keys(this.cachedPokemon).length) {
+            await this.getAllPokemon();
         }
+        const foundPokemon: Pokemon = this.cachedPokemon[name];
 
+        // if it's not in the cache it doesn't exist
         if (!foundPokemon.isFullyLoaded) {
             await foundPokemon.load();
         }
@@ -76,7 +74,7 @@ export default class Pokemon {
         const data = rawPokemonData?.data;
         const types: Type[] = await Promise.all(
             data.types.map(
-                async (type: any) => buildType(
+                async (type: { type: { name: string; }, slot: number }) => buildType(
                     type.type.name,
                     type.slot === 1,
                 ),
