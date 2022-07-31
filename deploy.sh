@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # abort on errors
 set -e
+yarn install
 # build
 yarn run build
 # navigate into the build output directory
