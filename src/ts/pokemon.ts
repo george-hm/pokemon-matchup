@@ -74,7 +74,7 @@ export default class Pokemon {
         const data = rawPokemonData?.data;
         const types: Type[] = await Promise.all(
             data.types.map(
-                async (type: any) => buildType(
+                async (type: { type: { name: string; }, slot: number }) => buildType(
                     type.type.name,
                     type.slot === 1,
                 ),
