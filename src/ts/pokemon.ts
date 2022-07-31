@@ -60,6 +60,10 @@ export default class Pokemon {
         }
         const foundPokemon: Pokemon = this.cachedPokemon[name];
 
+        if (!foundPokemon) {
+            throw new Error(`No pokemon found for ${name}`);
+        }
+
         // if it's not in the cache it doesn't exist
         if (!foundPokemon.isFullyLoaded) {
             await foundPokemon.load();
