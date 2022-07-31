@@ -55,6 +55,7 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
     if (cachedTypes[type]) {
         const cached = cachedTypes[type];
         cached.primaryType = primaryType;
+        return cached;
     }
 
     const response = await axios.get(`${BASE_URL}type/${type}`);
