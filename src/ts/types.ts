@@ -93,3 +93,42 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
 
     return typeData;
 }
+
+export function getMatchupForGeneration(type: Type, gen: Generations): DamageMatchups {
+    // first see if we have the data for the generation
+    if (type.versions[gen]) {
+        return type.versions[gen] as DamageMatchups;
+    }
+
+    // if not, see if we have the data for any past generations
+    const pastGenerations = Object.keys(type.versions).filter(
+        (version) => version !== Generations.GEN_LATEST,
+    );
+
+    if (!pastGenerations.length) {
+        return type.versions[Generations.GEN_LATEST] as DamageMatchups;
+    }
+
+    // get the closest higher generation
+    const closestHigherGen = pastGenerations.reduce((closest, current) => {
+        if (current > gen) {
+            return current;
+        }
+        return closest;
+    });
+
+    // if its not higher, just return the latest
+    if (!closestHigherGen || closestHigherGen < gen) {
+        return type.versions[Generations.GEN_LATEST] as DamageMatchups;
+    }
+
+    // get the closest lower generation
+    const closestLowerGen = pastGenerations.reduce((closest, current) => {
+        if (current < gen) {
+            return current;
+        }
+        return closest;
+    });
+
+    return type.versions[closestLowerGen as Generations] as DamageMatchups;
+}
