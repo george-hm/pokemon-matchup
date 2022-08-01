@@ -15,17 +15,35 @@ const selectOptions: SelectOption[] = await getAllPokemonSelectOptions();
 
 <template>
     <n-space justify="center">
-        <n-h4 class="space_heading">Generation</n-h4>
-        <n-radio-group v-model:value="model.generation">
-            <n-radio-button value="1" label="RBY"/>
-            <n-radio-button value="2" label="GSC"/>
-            <n-radio-button value="3" label="RSE/FRLG"/>
-            <n-radio-button value="4" label="DPP/HGSS"/>
-            <n-radio-button value="5" label="BW"/>
-            <n-radio-button value="6" label="XY"/>
-            <n-radio-button value="7" label="USUM"/>
-            <n-radio-button value="8" label="SWSH"/>
-        </n-radio-group>
+        <div>
+            <n-h4 class="space_heading">Generation</n-h4>
+            <n-radio-group class="space_radio_group" v-model:value="model.generation">
+                <div class="radio_button_standalone">
+                    <n-radio-button value="1" label="RBY"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="2" label="GSC"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="3" label="RSE/FRLG"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="4" label="DPP/HGSS"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="5" label="BW"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="6" label="XY"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="7" label="USUM"/>
+                </div>
+                <div class="radio_button_standalone">
+                    <n-radio-button value="8" label="SWSH"/>
+                </div>
+            </n-radio-group>
+        </div>
     </n-space>
     <n-divider />
     <n-grid x-gap="24" cols="1 900:2">
@@ -45,7 +63,17 @@ const selectOptions: SelectOption[] = await getAllPokemonSelectOptions();
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
     .space_heading {
-        margin-right: 10px;
         margin-bottom: 0;
+    }
+
+    .space_radio_group {
+        margin-left: -4px;
+    }
+    .radio_button_standalone {
+        display: inline-block;
+        margin: 4px;
+    }
+    .radio_button_standalone .n-radio-button {
+        padding: 4px 14px;
     }
 </style>
