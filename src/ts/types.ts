@@ -49,6 +49,7 @@ export interface Type {
     name: string;
     primaryType?: boolean;
     versions: Versions<DamageMatchups>;
+    earliestGeneration: Generations;
 }
 
 const cachedTypes: { [key: string]: Type; } = {};
@@ -77,8 +78,6 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
         return dupedCache;
     }
 
-    console.log(`Fetching type ${type}`);
-
     const response = await axios.get(`${BASE_URL}type/${type}`);
     const data = response?.data;
     if (!data) {
@@ -91,6 +90,9 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
         versions: {
             [Generations.GEN_LATEST]: mapDamageRelations(data.damage_relations),
         },
+        earliestGeneration: convertGenStringToEnum(
+            data.generation.url,
+        ),
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,7 +163,17 @@ export function getMatchupForGeneration(type: Type, gen: Generations): DamageMat
 
 export function getTypesForGeneration(typeVersions: Versions<Type[]>, gen: Generations): Type[] {
     const closestGen = getClosestGen(typeVersions, gen);
-    return typeVersions[closestGen] as Type[];
+    const types = typeVersions[closestGen] as Type[];
+    // loop through types and check earliest gen
+    for (let i = 0; i < types.length; i += 1) {
+        const type = types[i];
+        if (type.earliestGeneration > gen) {
+            types.splice(i, 1);
+            i -= 1;
+        }
+    }
+
+    return types;
 }
 
 export async function buildFromRawTypes(rawTypes: RawTypeResponse) {

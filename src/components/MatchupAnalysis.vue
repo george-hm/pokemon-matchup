@@ -3,6 +3,7 @@ import { defineProps, ref, watch } from 'vue';
 import { HomePageModel } from '@/ts/component_interfaces';
 import { getPokemonById } from '@/ts/pokemon';
 import { PokemonMatchup, getPokemonMatchup } from '@/ts/pokemon_matchup';
+import { Generations } from '@/ts/generations';
 
 const props = defineProps<{
     modelValue: HomePageModel,
@@ -11,7 +12,7 @@ const isNotReady = ref(true);
 const analysisResults = ref(['']);
 
 watch(props, async () => {
-    const { pokemonYou, pokemonOpponent } = props.modelValue;
+    const { pokemonYou, pokemonOpponent, generation } = props.modelValue;
     isNotReady.value = true;
     const pokemonYouObj = await getPokemonById(pokemonYou);
     const pokemonOpponentObj = await getPokemonById(pokemonOpponent);
@@ -20,7 +21,11 @@ watch(props, async () => {
     const items: string[] = [];
     const yourName = pokemonYouObj.name;
     const opponentName = pokemonOpponentObj.name;
-    const pM: PokemonMatchup = getPokemonMatchup(pokemonYouObj, pokemonOpponentObj);
+    const pM: PokemonMatchup = getPokemonMatchup(
+        pokemonYouObj,
+        pokemonOpponentObj,
+        generation as Generations,
+    );
 
     const toTypes = Object.keys(pM.to);
     for (let index = 0; index < toTypes.length; index += 1) {

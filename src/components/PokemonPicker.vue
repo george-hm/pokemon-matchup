@@ -7,7 +7,6 @@ const props = defineProps<{
     modelValue: string,
     options: SelectOption[],
 }>();
-console.log(props);
 const imageURL = computed(() => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${props.modelValue}.png`);
 
 async function inputChanged(id: string) {
