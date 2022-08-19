@@ -9,19 +9,9 @@ interface RawDamageRelation {
 }
 
 // this is the raw response we get from the api
-interface RawTypeResponse {
-    // eslint-disable-next-line camelcase
-    past_types: Array<{
-        generation: { url: string; };
-        types: Array<{
-            slot: number;
-            type: { name: string; };
-        }>;
-    }>;
-    types: Array<{
-        slot: number;
-        type: { name: string; };
-    }>;
+export interface RawTypeResponse {
+    slot: number;
+    type: { name: string; };
 }
 
 interface DamageMatchups {
@@ -47,12 +37,21 @@ export interface Versions<T> {
 
 export interface Type {
     name: string;
-    primaryType?: boolean;
-    versions: Versions<DamageMatchups>;
+    generation: Generations;
+    damageRelations: DamageMatchups;
     earliestGeneration: Generations;
 }
 
-const cachedTypes: { [key: string]: Type; } = {};
+export interface MinimalTypeInfo {
+    name: string;
+    primary: boolean;
+}
+
+interface TypeAndVersion {
+    [key: string]: Versions<Type>;
+}
+
+const cachedTypes: TypeAndVersion = {};
 
 function mapDamageRelations(raw: RawDamageRelation): DamageMatchups {
     const mapRelation = (rawType: { name: string; }): string => rawType.name;
@@ -68,13 +67,14 @@ function mapDamageRelations(raw: RawDamageRelation): DamageMatchups {
     return relations;
 }
 
-export async function buildType(type: string, primaryType: boolean): Promise<Type> {
+export async function getTypeVersionsFromName(
+    type: string,
+): Promise<Versions<Type>> {
     // handle caching
     if (cachedTypes[type]) {
         const cached = cachedTypes[type];
         // duplicate to avoid modifying the cached version
         const dupedCache = { ...cached };
-        dupedCache.primaryType = primaryType;
         return dupedCache;
     }
 
@@ -84,15 +84,15 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
         throw new Error(`No type data for ${type}`);
     }
 
-    const typeData: Type = {
-        name: data.name,
-        primaryType,
-        versions: {
-            [Generations.GEN_LATEST]: mapDamageRelations(data.damage_relations),
+    const earliestGeneration = convertGenStringToEnum(data.generation.url);
+
+    const versions: Versions<Type> = {
+        [Generations.GEN_LATEST]: {
+            name: data.name,
+            generation: Generations.GEN_LATEST,
+            damageRelations: mapDamageRelations(data.damage_relations),
+            earliestGeneration,
         },
-        earliestGeneration: convertGenStringToEnum(
-            data.generation.url,
-        ),
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,13 +108,17 @@ export async function buildType(type: string, primaryType: boolean): Promise<Typ
         }
 
         const versionRelations = mapDamageRelations(versionData.damage_relations);
-        typeData.versions[genNumber] = versionRelations;
+        versions[genNumber] = {
+            name: versionData.name,
+            generation: genNumber,
+            damageRelations: versionRelations,
+            earliestGeneration,
+        };
     });
 
-    cachedTypes[type] = { ...typeData };
-    delete cachedTypes[type].primaryType;
+    cachedTypes[type] = { ...versions };
 
-    return typeData;
+    return versions;
 }
 
 function getClosestGen(versions: Versions<unknown>, gen: Generations): Generations {
@@ -156,58 +160,28 @@ function getClosestGen(versions: Versions<unknown>, gen: Generations): Generatio
     return closestLowerGen as Generations;
 }
 
-export function getMatchupForGeneration(type: Type, gen: Generations): DamageMatchups {
-    const closestGen = getClosestGen(type.versions, gen);
-    return type.versions[closestGen] as DamageMatchups;
-}
-
-export function getTypesForGeneration(typeVersions: Versions<Type[]>, gen: Generations): Type[] {
+export function getTypesForGeneration(
+    typeVersions: Versions<MinimalTypeInfo[]>,
+    gen: Generations,
+): Type[] {
     const closestGen = getClosestGen(typeVersions, gen);
-    const types = typeVersions[closestGen] as Type[];
-    // loop through types and check earliest gen
-    for (let i = 0; i < types.length; i += 1) {
-        const type = types[i];
+    // first get all the type names for this generation
+    const minimalTypesForGen = typeVersions[closestGen] as MinimalTypeInfo[];
+
+    // load the type fully
+    const loadedTypeVersions = minimalTypesForGen.map((type) => cachedTypes[type.name]);
+
+    // then load the type for the specific gen
+    const typesForGen = loadedTypeVersions.map((type) => type[getClosestGen(type, gen)] as Type);
+
+    // delete the type if it didn't exist in this generation
+    for (let i = 0; i < typesForGen.length; i += 1) {
+        const type = typesForGen[i];
         if (type.earliestGeneration > gen) {
-            types.splice(i, 1);
+            typesForGen.splice(i, 1);
             i -= 1;
         }
     }
 
-    return types;
-}
-
-export async function buildFromRawTypes(rawTypes: RawTypeResponse) {
-    const types: Type[] = await Promise.all(
-        rawTypes.types.map(
-            async (type) => buildType(
-                type.type.name,
-                type.slot === 1,
-            ),
-        ),
-    );
-
-    const typeVersions: Versions<Type[]> = {
-        [Generations.GEN_LATEST]: types,
-    };
-    const promises: Promise<Type>[] = [];
-    for (let i = 0; i < rawTypes.past_types.length; i += 1) {
-        const gen = convertGenStringToEnum(rawTypes.past_types[i].generation.url);
-        const genType = rawTypes.past_types[i].types;
-        typeVersions[gen] = [];
-        for (let j = 0; j < genType.length; j += 1) {
-            const type = genType[j];
-            const prom = buildType(
-                type.type.name,
-                type.slot === 1,
-            );
-
-            prom.then((builtType) => {
-                typeVersions?.[gen]?.push(builtType);
-            });
-            promises.push(prom);
-        }
-    }
-    await Promise.all(promises);
-
-    return typeVersions;
+    return typesForGen;
 }

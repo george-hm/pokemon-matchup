@@ -1,6 +1,6 @@
 import { Generations } from './generations';
 import { Pokemon } from './pokemon';
-import { getMatchupForGeneration, getTypesForGeneration } from './types';
+import { getTypesForGeneration } from './types';
 
 export interface PokemonMatchup {
     to: { [type: string]: number};
@@ -26,10 +26,7 @@ export function getPokemonMatchup(
     };
     for (let ii = 0; ii < yourTypes.length; ii += 1) {
         const yourType = yourTypes[ii].name;
-        const matchups = getMatchupForGeneration(
-            yourTypes[ii],
-            generation,
-        );
+        const matchups = yourTypes[ii].damageRelations;
         for (let jj = 0; jj < opponentTypeNames.length; jj += 1) {
             const opponentType = opponentTypeNames[jj];
             if (matchups.doubleDamageTo.includes(opponentType)) {
