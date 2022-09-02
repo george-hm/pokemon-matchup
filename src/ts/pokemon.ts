@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { SelectOption } from './component_interfaces';
-import { convertGenStringToEnum, Generations } from './generations';
-import { getTypeVersionsFromName, MinimalTypeInfo, Versions } from './types';
+import { convertGenStringToEnum, Generations, Versions } from './generations';
+import { getTypeVersionsFromName, MinimalTypeInfo } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
