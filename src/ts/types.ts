@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { convertGenStringToEnum, Generations } from './generations';
+import {
+    Generations, getClosestGen, Versions, convertGenStringToEnum,
+} from './generations';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
 
@@ -21,18 +23,6 @@ interface DamageMatchups {
     halfDamageTo: string[],
     noDamageFrom: string[],
     noDamageTo: string[],
-}
-
-export interface Versions<T> {
-    [Generations.GEN_LATEST]: T;
-    [Generations.GEN_1]?: T;
-    [Generations.GEN_2]?: T;
-    [Generations.GEN_3]?: T;
-    [Generations.GEN_4]?: T;
-    [Generations.GEN_5]?: T;
-    [Generations.GEN_6]?: T;
-    [Generations.GEN_7]?: T;
-    [Generations.GEN_8]?: T;
 }
 
 export interface Type {
@@ -121,45 +111,6 @@ export async function getTypeVersionsFromName(
     return versions;
 }
 
-function getClosestGen(versions: Versions<unknown>, gen: Generations): Generations {
-    // get the specific gen if it exists
-    if (versions[gen]) {
-        return gen;
-    }
-
-    // if not, see if we have the data for any past generations
-    const pastGenerations = Object.keys(versions).filter(
-        (version) => version !== Generations.GEN_LATEST,
-    );
-
-    if (!pastGenerations.length) {
-        return Generations.GEN_LATEST;
-    }
-
-    // get the closest higher generation
-    const closestHigherGen = pastGenerations.reduce((closest, current) => {
-        if (current > gen) {
-            return current;
-        }
-        return closest;
-    });
-
-    // if its not higher, just return the latest
-    if (!closestHigherGen || closestHigherGen < gen) {
-        return Generations.GEN_LATEST;
-    }
-
-    // get the closest lower generation
-    const closestLowerGen = pastGenerations.reduce((closest, current) => {
-        if (current < gen) {
-            return current;
-        }
-        return closest;
-    });
-
-    return closestLowerGen as Generations;
-}
-
 export function getTypesForGeneration(
     typeVersions: Versions<MinimalTypeInfo[]>,
     gen: Generations,
@@ -184,4 +135,14 @@ export function getTypesForGeneration(
     }
 
     return typesForGen;
+}
+
+export async function getTypeForGeneration(
+    type: string,
+    gen: Generations,
+): Promise<Type> {
+    const fullTypeData = await getTypeVersionsFromName(type);
+    const closestGen = getClosestGen(fullTypeData, gen);
+
+    return fullTypeData[closestGen] as Type;
 }
