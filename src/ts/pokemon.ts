@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { SelectOption } from './component_interfaces';
-import { convertGenStringToEnum, Generations, Versions } from './generations';
+import {
+    convertGenStringToEnum, convertVersionGroupStringToEnum, Generations, Versions,
+} from './generations';
 import { getTypeVersionsFromName, MinimalTypeInfo } from './types';
 
 const BASE_URL = 'https://pokeapi.co/api/v2/';
@@ -10,6 +12,7 @@ export interface Pokemon {
     typeVersions: Versions<MinimalTypeInfo[]>;
     id: string;
     imageUrl: string;
+    moves: Versions<{ [level: string]: string[] }>
 }
 
 const cachedPokemon: { [id: string]: Pokemon; } = {};
@@ -57,6 +60,42 @@ export async function getPokemonById(id: string|number): Promise<Pokemon> {
         }
     }
 
+    const moves: Versions<{ [level: string]: string[]; }> = {
+        [Generations.GEN_LATEST]: {},
+    };
+
+    if (data?.moves) {
+        for (let i = 0; i < data.moves.length; i += 1) {
+            const moveData = data.moves[i];
+            const moveName = moveData.move.name;
+            const versionGroupInfo = moveData.version_group_details;
+            for (let x = 0; x < versionGroupInfo.length; x += 1) {
+                const currentVersionInfo = versionGroupInfo[x];
+                const levelLearnedAt = currentVersionInfo.level_learned_at;
+                // it kind of sucks we're doing an await in a loop here but
+                // doing this another way is a huge pain
+                // eslint-disable-next-line no-await-in-loop
+                const gen = await convertVersionGroupStringToEnum(
+                    currentVersionInfo.version_group.url,
+                );
+                moves[gen] = moves[gen] || {};
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                moves[gen]![levelLearnedAt] = moves[gen]![levelLearnedAt] || [];
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                moves[gen]![levelLearnedAt].push(moveName);
+            }
+        }
+
+        // get the latest gen
+        const latestGen = Object.keys(moves)
+            .filter((gen) => !Number.isNaN(Number(gen)))
+            .sort((a, b) => Number(b) - Number(a))[0];
+        moves[Generations.GEN_LATEST] = moves[
+            latestGen as Generations
+        ] as { [level: string]: string[]; };
+    }
+    console.log('moves built');
+
     // dedupe all type names
     allTypeNames = [...new Set(allTypeNames)];
     // load all the types fully to put them into cache
@@ -67,6 +106,7 @@ export async function getPokemonById(id: string|number): Promise<Pokemon> {
         typeVersions,
         id: data.id,
         imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
+        moves,
     };
 
     cachedPokemon[pokemon.name] = pokemon;
@@ -89,3 +129,10 @@ export async function getAllPokemonSelectOptions(): Promise<SelectOption[]> {
         )),
     }));
 }
+
+export async function main() {
+    const pokemon = await getPokemonById('blaziken');
+    console.log(JSON.stringify(pokemon, null, 4));
+}
+
+main();
