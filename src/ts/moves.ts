@@ -111,3 +111,14 @@ export async function loadMoveForGeneration(
     const closestGen = getClosestGen(move, generation);
     return move[closestGen] as MoveDetail;
 }
+
+export function getAllMoveNamesFromLevels(moves: { [level: string]: string[]; }) {
+    const moveNames: string[] = [];
+    Object.keys(moves).forEach((level) => {
+        moves[level].forEach((curMoveName) => {
+            moveNames.push(curMoveName);
+        });
+    });
+
+    return moveNames;
+}
