@@ -129,10 +129,3 @@ export async function getAllPokemonSelectOptions(): Promise<SelectOption[]> {
         )),
     }));
 }
-
-export async function main() {
-    const pokemon = await getPokemonById('blaziken');
-    console.log(JSON.stringify(pokemon, null, 4));
-}
-
-main();
