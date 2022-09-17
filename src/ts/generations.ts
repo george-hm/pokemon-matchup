@@ -41,6 +41,9 @@ export function convertGenStringToEnum(gen: string): Generations {
 }
 
 export async function convertVersionGroupStringToEnum(versionGroup: string): Promise<Generations> {
+    if (versionGroupCache[versionGroup]) {
+        return versionGroupCache[versionGroup];
+    }
     const data = (await axios.get(versionGroup))?.data;
     if (!data) {
         throw new Error(`Invalid version group: ${versionGroup}`);
